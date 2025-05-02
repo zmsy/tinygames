@@ -39,3 +39,17 @@ luac.out
 *.x86_64
 *.hex
 
+# Python
+pyxel/bear_bucket/.venv/
+.venv
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.env
+.DS_Store
