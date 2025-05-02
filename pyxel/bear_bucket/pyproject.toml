@@ -1,0 +1,12 @@
+[project]
+name = "bear_bucket"
+version = "1.0.0"
+description = "Defend your bucket from incoming bears!"
+authors = [
+    { name = "Zach Morrissey", email = "zachmor05@gmail.com" }
+    # add joe here too
+]
+requires-python = ">=3.8"
+dependencies = [
+    "pyxel>=2.3.18",
+]
