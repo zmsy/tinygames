@@ -1,2 +1,3 @@
-# pico8games
-Top-level repository containing pico-8 games.
+# tinygames
+
+Some small games that Zach and Joe are putting together.
