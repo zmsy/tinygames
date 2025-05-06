@@ -1,6 +1,10 @@
 import pyxel
 
 
+# load custom color palette
+pyxel.load("palette.pyxpal")
+
+
 class App:
     def __init__(self):
         pyxel.init(160, 120, title="Bear Bucket")
