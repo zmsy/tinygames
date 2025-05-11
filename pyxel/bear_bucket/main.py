@@ -71,17 +71,31 @@ class Player:
         self.input_x = 1
 
     def jump(self) -> None:
-        # Set jump buffer so jump will trigger as soon as on ground
+        # Called on input: set jump buffer so jump will trigger as soon as on ground
         self.jump_buffer_timer = self.JUMP_BUFFER_MAX
 
-    def try_jump(self) -> None:
-        # Allow jump if on ground or within coyote time
+    def update_jump(self, tilemap: List[List[int]]) -> None:
+        # Try to jump if possible (buffered jump)
         if (self.is_on_ground or self.coyote_timer > 0) and self.jump_buffer_timer > 0:
             self.velocity_y = -self.jump_strength
             self.is_jumping = True
             self.is_on_ground = False
             self.jump_buffer_timer = 0
             self.coyote_timer = 0  # Reset coyote timer after jump
+
+        # Decrement jump buffer timer
+        if self.jump_buffer_timer > 0:
+            self.jump_buffer_timer -= 1
+
+        # Set is_on_ground using terse helper
+        self.is_on_ground = self._check_on_ground(tilemap)
+
+        # Coyote time logic
+        if self.is_on_ground:
+            self.coyote_timer = self.COYOTE_TIME_MAX
+        else:
+            if self.coyote_timer > 0:
+                self.coyote_timer -= 1
 
     def update_position(self, tilemap: List[List[int]]) -> None:
         # Apply gravity
@@ -112,22 +126,8 @@ class Player:
         self.y += self.velocity_y
         self.handle_collisions(tilemap, axis="y")
 
-        # Try to jump if possible (buffered jump)
-        self.try_jump()
-
-        # Decrement jump buffer timer
-        if self.jump_buffer_timer > 0:
-            self.jump_buffer_timer -= 1
-
-        # Set is_on_ground using terse helper
-        self.is_on_ground = self._check_on_ground(tilemap)
-
-        # Coyote time logic
-        if self.is_on_ground:
-            self.coyote_timer = self.COYOTE_TIME_MAX
-        else:
-            if self.coyote_timer > 0:
-                self.coyote_timer -= 1
+        # All jump/coyote/buffer logic colocated here
+        self.update_jump(tilemap)
 
         # Reset input tracker for next frame
         self.input_x = 0
