@@ -6,7 +6,7 @@ authors = [
     { name = "Zach Morrissey", email = "zachmor05@gmail.com" }
     # add joe here too
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 dependencies = [
     "pyxel>=2.3.18",
 ]
