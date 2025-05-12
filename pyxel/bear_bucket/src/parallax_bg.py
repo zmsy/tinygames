@@ -34,7 +34,7 @@ STARS_CONFIG: StarsConfig = {
     "color": 7,  # white
     "twinkle_color": 6,  # light gray for twinkle
     "area_top": 0,  # y start
-    "area_bottom_frac": 0.5,  # fraction of screen_height for y end
+    "area_bottom_frac": 0.7,  # fraction of screen_height for y end
     "parallax_factor": 0.08,  # slower than mountains
     "twinkle_mod": 13,  # cross/star pattern
     "twinkle_speed": 0.08,  # radians per frame

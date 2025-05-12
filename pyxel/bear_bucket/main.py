@@ -18,6 +18,26 @@ class BoundingBox:
     right: float
     bottom: float
 
+    @classmethod
+    def from_tile(cls, tx: int, ty: int) -> "BoundingBox":
+        """Create a BoundingBox from tile coordinates using Const.TILE_LEN."""
+        tile_len = Const.TILE_LEN
+        return cls(
+            top=ty * tile_len,
+            left=tx * tile_len,
+            right=tx * tile_len + tile_len - 1,
+            bottom=ty * tile_len + tile_len - 1,
+        )
+
+    def intersects(self, other: "BoundingBox") -> bool:
+        """Return True if this bounding box intersects with another."""
+        return not (
+            self.right < other.left
+            or self.left > other.right
+            or self.bottom < other.top
+            or self.top > other.bottom
+        )
+
 
 class Player:
     def __init__(
@@ -136,47 +156,95 @@ class Player:
         map_width: int = len(tilemap[0])
         map_height: int = len(tilemap)
 
-        # Calculate the tile indices the player occupies
-        left_tile: int = int(self.x // 8)
-        right_tile: int = int((self.x + self.width - 1) // 8)
-        top_tile: int = int(self.y // 8)
-        bottom_tile: int = int((self.y + self.height - 1) // 8)
+        # Determine the range of tiles the player overlaps
+        left_tile = int(self.x // Const.TILE_LEN)
+        right_tile = int((self.x + self.width - 1) // Const.TILE_LEN)
+        top_tile = int(self.y // Const.TILE_LEN)
+        bottom_tile = int((self.y + self.height - 1) // Const.TILE_LEN)
 
         if axis == "x":
-            for y in range(top_tile, bottom_tile + 1):
-                if self.velocity_x > 0:  # Moving right
-                    if right_tile >= map_width or tilemap[y][right_tile] == 1:
-                        self.x = right_tile * Const.TILE_LEN - self.width
-                        self.velocity_x = 0.0
-                elif self.velocity_x < 0:  # Moving left
-                    if left_tile < 0 or tilemap[y][left_tile] == 1:
-                        self.x = (left_tile + 1) * Const.TILE_LEN
-                        self.velocity_x = 0.0
+            if self.velocity_x > 0:  # Moving right
+                next_x = self.x + self.velocity_x
+                right_tile = int((next_x + self.width - 1) // Const.TILE_LEN)
+                for ty in range(top_tile, bottom_tile + 1):
+                    for tx in [right_tile]:
+                        if (
+                            0 <= ty < map_height
+                            and 0 <= tx < map_width
+                            and tilemap[ty][tx] == 1
+                        ):
+                            tile_box = BoundingBox.from_tile(tx, ty)
+                            if self.box.intersects(tile_box):
+                                self.x = tile_box.left - self.width
+                                self.velocity_x = 0.0
+                                break
+            elif self.velocity_x < 0:  # Moving left
+                next_x = self.x + self.velocity_x
+                left_tile = int(next_x // Const.TILE_LEN)
+                for ty in range(top_tile, bottom_tile + 1):
+                    for tx in [left_tile]:
+                        if (
+                            0 <= ty < map_height
+                            and 0 <= tx < map_width
+                            and tilemap[ty][tx] == 1
+                        ):
+                            tile_box = BoundingBox.from_tile(tx, ty)
+                            if self.box.intersects(tile_box):
+                                self.x = tile_box.right + 1
+                                self.velocity_x = 0.0
+                                break
         elif axis == "y":
             self.is_on_ground = False
-            for x in range(left_tile, right_tile + 1):
-                if self.velocity_y > 0:  # Moving down
-                    if bottom_tile >= map_height or tilemap[bottom_tile][x] == 1:
-                        self.y = bottom_tile * Const.TILE_LEN - self.height
-                        self.velocity_y = 0.0
-                        self.is_on_ground = True
-                elif self.velocity_y < 0:  # Moving up
-                    if top_tile < 0 or tilemap[top_tile][x] == 1:
-                        self.y = (top_tile + 1) * Const.TILE_LEN
-                        self.velocity_y = 0.0
+            if self.velocity_y > 0:  # Moving down
+                next_y = self.y + self.velocity_y
+                bottom_tile = int((next_y + self.height - 1) // Const.TILE_LEN)
+                for tx in range(left_tile, right_tile + 1):
+                    for ty in [bottom_tile]:
+                        if (
+                            0 <= ty < map_height
+                            and 0 <= tx < map_width
+                            and tilemap[ty][tx] == 1
+                        ):
+                            tile_box = BoundingBox.from_tile(tx, ty)
+                            if self.box.intersects(tile_box):
+                                self.y = tile_box.top - self.height
+                                self.velocity_y = 0.0
+                                self.is_on_ground = True
+                                break
+            elif self.velocity_y < 0:  # Moving up
+                next_y = self.y + self.velocity_y
+                top_tile = int(next_y // Const.TILE_LEN)
+                for tx in range(left_tile, right_tile + 1):
+                    for ty in [top_tile]:
+                        if (
+                            0 <= ty < map_height
+                            and 0 <= tx < map_width
+                            and tilemap[ty][tx] == 1
+                        ):
+                            tile_box = BoundingBox.from_tile(tx, ty)
+                            if self.box.intersects(tile_box):
+                                self.y = tile_box.bottom + 1
+                                self.velocity_y = 0.0
+                                break
 
     def _check_on_ground(self, tilemap: List[List[int]]) -> bool:
-        bottom_tile_row = int(self.box.bottom // Const.TILE_LEN) + 1
-        if self.velocity_y < 0 or bottom_tile_row >= len(tilemap):
-            return False
-        final_y = self.box.bottom + 1
-        tile_y = bottom_tile_row * Const.TILE_LEN
+        # Check if the player is standing on any solid tile below
+        map_width: int = len(tilemap[0])
+        map_height: int = len(tilemap)
         left_tile = int(self.box.left // Const.TILE_LEN)
         right_tile = int(self.box.right // Const.TILE_LEN)
-        return any(
-            tilemap[bottom_tile_row][x] == 1 and 0 <= tile_y - final_y < 2
-            for x in range(left_tile, right_tile + 1)
-        )
+        bottom_tile = int((self.box.bottom + 1) // Const.TILE_LEN)
+        for tx in range(left_tile, right_tile + 1):
+            ty = bottom_tile
+            if 0 <= ty < map_height and 0 <= tx < map_width and tilemap[ty][tx] == 1:
+                tile_box = BoundingBox.from_tile(tx, ty)
+                # Check if the player's bottom is just above the tile
+                if (
+                    self.box.bottom + 1 >= tile_box.top
+                    and self.box.bottom < tile_box.top
+                ):
+                    return True
+        return False
 
     def draw(self) -> None:
         pyxel.rect(int(self.x), int(self.y), self.width, self.height, 9)
